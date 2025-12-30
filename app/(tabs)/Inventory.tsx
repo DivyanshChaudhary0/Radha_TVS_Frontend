@@ -77,14 +77,12 @@ const InventoryScreen: React.FC = () => {
   ): Promise<void> => {
     try {
       if (selectedBike) {
-        // Update existing bike
         await bikeApi.updateBike(selectedBike._id, bikeData);
         Toast.show({
           type: "success",
           text1: "Bike updated successfully",
         });
       } else {
-        // Create new bike
         const newBikeData = {
           ...bikeData,
           brand: "TVS" as const,
