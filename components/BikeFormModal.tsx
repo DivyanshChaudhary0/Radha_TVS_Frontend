@@ -5,7 +5,6 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
     KeyboardAvoidingView,
-    Modal,
     Platform,
     ScrollView,
     StyleSheet,
@@ -14,6 +13,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import Modal from 'react-native-modal';
 
 interface FormData {
   model: string;

@@ -1,4 +1,3 @@
-
 import { bikeApi } from "@/api/bikeApi";
 import BikeCard from "@/components/BikeCard";
 import BikeFormModal from "@/components/BikeFormModal";
@@ -7,15 +6,16 @@ import { Bike } from "@/utils/types";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 
 const InventoryScreen: React.FC = () => {
   const [bikes, setBikes] = useState<Bike[]>([]);
@@ -59,11 +59,16 @@ const InventoryScreen: React.FC = () => {
   const handleDeleteBike = async (id: string): Promise<void> => {
     try {
       await bikeApi.deleteBike(id);
-      Alert.alert("Success", "Bike deleted successfully");
+      Toast.show({
+        type: "success",
+        text1: "Bike deleted successfully",
+      });
       fetchBikes();
     } catch (error) {
-      Alert.alert("Error", "Failed to delete bike. Please try again.");
-      console.error(error);
+      Toast.show({
+        type: "error",
+        text1: "Failed to delete bike. Please try again.",
+      });
     }
   };
 
@@ -74,7 +79,10 @@ const InventoryScreen: React.FC = () => {
       if (selectedBike) {
         // Update existing bike
         await bikeApi.updateBike(selectedBike._id, bikeData);
-        Alert.alert("Success", "Bike updated successfully");
+        Toast.show({
+          type: "success",
+          text1: "Bike updated successfully",
+        });
       } else {
         // Create new bike
         const newBikeData = {
@@ -82,15 +90,19 @@ const InventoryScreen: React.FC = () => {
           brand: "TVS" as const,
         };
         await bikeApi.createBike(newBikeData);
-        Alert.alert("Success", "Bike added successfully");
+        Toast.show({
+          type: "success",
+          text1: "Bike added successfully",
+        });
       }
       fetchBikes();
     } catch (error) {
-      Alert.alert(
-        "Error",
-        `Failed to ${selectedBike ? "update" : "add"} bike. Please try again.`
-      );
-      console.error(error);
+      Toast.show({
+        type: "error",
+        text1: `Failed to ${
+          selectedBike ? "update" : "add"
+        } bike. Please try again.`,
+      });
     }
   };
 
