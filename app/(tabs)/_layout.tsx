@@ -1,10 +1,10 @@
-import { Tabs } from "expo-router";
 import {
+  Feather,
+  FontAwesome5,
   Ionicons,
   MaterialIcons,
-  FontAwesome5,
-  Feather,
 } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
 export default function TabLayout() {
   return (

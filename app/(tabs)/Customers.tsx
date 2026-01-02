@@ -1,20 +1,22 @@
-// app/(tabs)/Customers.tsx
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  FlatList,
-  Alert,
-  Modal,
-} from "react-native";
-import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { colors } from "@/utils/constant";
+import { customerApi } from "@/api/customerApi";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { colors } from "@/utils/constant";
 import { Customer } from "@/utils/types";
+import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Toast from "react-native-toast-message";
 
 export default function CustomersScreen() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -40,50 +42,9 @@ export default function CustomersScreen() {
 
   const fetchCustomers = async () => {
     try {
-      // TODO: Replace with actual API call
-      const mockCustomers: Customer[] = [
-        {
-          _id: "1",
-          name: "Rajesh Kumar",
-          email: "rajesh@example.com",
-          phone: "+91 9876543210",
-          address: "Mumbai, Maharashtra",
-          createdAt: "2024-01-15T10:30:00Z",
-        },
-        {
-          _id: "2",
-          name: "Priya Sharma",
-          email: "priya@example.com",
-          phone: "+91 8765432109",
-          address: "Delhi, NCR",
-          createdAt: "2024-01-20T14:45:00Z",
-        },
-        {
-          _id: "3",
-          name: "Amit Patel",
-          email: "amit@example.com",
-          phone: "+91 7654321098",
-          address: "Ahmedabad, Gujarat",
-          createdAt: "2024-01-25T09:15:00Z",
-        },
-        {
-          _id: "4",
-          name: "Sneha Verma",
-          email: "sneha@example.com",
-          phone: "+91 6543210987",
-          address: "Bangalore, Karnataka",
-          createdAt: "2024-01-30T16:20:00Z",
-        },
-        {
-          _id: "5",
-          name: "Rohit Singh",
-          email: "rohit@example.com",
-          phone: "+91 5432109876",
-          address: "Pune, Maharashtra",
-          createdAt: "2024-02-01T11:10:00Z",
-        },
-      ];
-      setCustomers(mockCustomers);
+      const res = await customerApi.getAllCustomers();
+      console.log(res);
+      setCustomers(res);
     } catch (error) {
       Alert.alert("Error", "Failed to load customers");
     } finally {
@@ -99,7 +60,6 @@ export default function CustomersScreen() {
   );
 
   const handleAddCustomer = () => {
-    // Reset form
     setFormData({
       name: "",
       email: "",
@@ -147,31 +107,41 @@ export default function CustomersScreen() {
 
     try {
       if (isEdit && selectedCustomer) {
-        // TODO: Update customer API call
-        console.log("Update customer:", selectedCustomer._id, formData);
-
-        // Update local state
-        setCustomers(
-          customers.map((c) =>
-            c._id === selectedCustomer._id
-              ? { ...c, ...formData, updatedAt: new Date().toISOString() }
-              : c
-          )
+        const res = await customerApi.editCustomer(
+          selectedCustomer._id,
+          formData
         );
-
+        if (res) {
+          setCustomers(
+            customers.map((c) =>
+              c._id === selectedCustomer._id
+                ? { ...c, ...formData, updatedAt: new Date().toISOString() }
+                : c
+            )
+          );
+        }
         Alert.alert("Success", "Customer updated successfully!");
       } else {
-        // TODO: Add customer API call
         const newCustomer: Customer = {
           _id: Date.now().toString(),
           ...formData,
           createdAt: new Date().toISOString(),
         };
 
-        // Update local state
-        setCustomers([newCustomer, ...customers]);
-
-        Alert.alert("Success", "Customer added successfully!");
+        try {
+          const res = await customerApi.addCustomer(newCustomer);
+          console.log(res);
+          setCustomers([newCustomer, ...customers]);
+          Toast.show({
+            type: "success",
+            text1: "Customer created successfully!",
+            text1Style: {
+              fontSize: 16,
+            },
+          });
+        } catch (err) {
+          console.log(err);
+        }
       }
 
       // Close modal
@@ -196,6 +166,7 @@ export default function CustomersScreen() {
   };
 
   const handleDeleteCustomer = (customerId: string) => {
+    console.log("customerId", customerId);
     Alert.alert(
       "Delete Customer",
       "Are you sure you want to delete this customer? This action cannot be undone.",
@@ -206,10 +177,17 @@ export default function CustomersScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              // TODO: Delete customer API call
-              setCustomers(customers.filter((c) => c._id !== customerId));
-              Alert.alert("Success", "Customer deleted successfully!");
+              const res = await customerApi.deleteCustomer(customerId);
+              console.log("delete response", res);
+              if (res.success) {
+                setCustomers(customers.filter((c) => c._id !== customerId));
+                Alert.alert("Success", "Customer deleted successfully!");
+              }
             } catch (error) {
+              Toast.show({
+                type: "error",
+                text1: "Failed to delete customer",
+              });
               Alert.alert("Error", "Failed to delete customer");
             }
           },
@@ -276,8 +254,10 @@ export default function CustomersScreen() {
       <TouchableOpacity
         style={styles.viewSalesButton}
         onPress={() => {
-          // Navigate to customer sales history
-          router.push(`/customer-sales/${item._id}`);
+          router.push({
+            pathname: "/customer-sales",
+            params: { id: item._id },
+          });
         }}
       >
         <Text style={styles.viewSalesText}>View Sales History</Text>
@@ -542,7 +522,7 @@ const CustomerModal = ({
   </View>
 );
 
-const styles = {
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -577,7 +557,7 @@ const styles = {
     alignItems: "center",
     backgroundColor: colors.white,
     margin: 16,
-    marginTop: -24,
+    marginTop: -12,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -848,4 +828,4 @@ const styles = {
     fontWeight: "600",
     color: colors.white,
   },
-};
+});

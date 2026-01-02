@@ -28,7 +28,7 @@ export default function Login() {
       Alert.alert("Required", "Please enter both username and password");
       return;
     }
-    login(email,password);
+    login(email, password);
   };
 
   if (isLoading) {

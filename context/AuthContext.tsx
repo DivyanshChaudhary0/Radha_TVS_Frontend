@@ -1,4 +1,3 @@
-
 import { authApi } from "@/api/authApi";
 import { User } from "@/utils/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -36,22 +35,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(res.user);
       if (savedToken) {
         setToken(savedToken);
-        router.replace("/Dashboard");
+        router.replace("/(tabs)/Dashboard");
       } else {
-        router.replace("/");
+        router.replace("/Login");
       }
 
       setIsLoading(false);
     } catch (err) {
       setIsLoading(false);
-      console.log(err);
+      router.replace("/Login");
     }
   };
 
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const { token, user } = await authApi.login(email.trim(), password.trim());
+      const { token, user } = await authApi.login(
+        email.trim(),
+        password.trim()
+      );
       console.log("user", user);
       console.log("token", token);
       setUser(user);
@@ -73,7 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     await AsyncStorage.removeItem("token");
     setToken(null);
-    router.replace("/");
+    router.replace("/Login");
   };
 
   return (

@@ -1,22 +1,24 @@
 // app/(tabs)/Dashboard.tsx
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  SafeAreaView,
-  StyleSheet,
-} from "react-native";
-import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { colors } from "@/utils/constant";
+import QuickAction from "@/components/QuickAction";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import StatCard from "@/components/StatCard";
-import QuickAction from "@/components/QuickAction";
+import { useAuth } from "@/context/AuthContext";
+import { colors } from "@/utils/constant";
+import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function DashboardScreen() {
+  const { isLoading } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
     totalBikes: 0,
@@ -127,6 +129,14 @@ export default function DashboardScreen() {
         );
     }
   };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
 
   return (
     <ScreenWrapper>

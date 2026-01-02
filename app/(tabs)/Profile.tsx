@@ -1,44 +1,29 @@
-import React, { useState } from "react";
+import ScreenWrapper from "@/components/ScreenWrapper";
+import { useAuth } from "@/context/AuthContext";
+import { colors } from "@/utils/constant";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Switch,
-  Alert,
-  Image,
-  Linking,
-} from "react-native";
-import {
+  Feather,
+  FontAwesome5,
   Ionicons,
   MaterialIcons,
-  FontAwesome5,
-  Feather,
 } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { colors } from "@/utils/constant";
-import ScreenWrapper from "@/components/ScreenWrapper";
-import * as ImagePicker from "expo-image-picker";
-import * as Sharing from "expo-sharing";
+import React, { useState } from "react";
+import {
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function ProfileScreen() {
+  const { user, logout } = useAuth();
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const user = {
-    name: "Rajesh Kumar",
-    email: "admin@tvsagency.com",
-    role: "Admin",
-    agency: "TVS Super Showroom",
-    location: "Mumbai, Maharashtra",
-    phone: "+91 9876543210",
-    joinDate: "2023-01-15",
-    totalSales: 128,
-    totalRevenue: "₹45,80,000",
-    performance: "94%",
-  };
 
   const menuSections = [
     {
@@ -93,14 +78,14 @@ export default function ProfileScreen() {
           value: darkMode,
           onToggle: setDarkMode,
         },
-        {
-          id: 6,
-          title: "Export Data",
-          icon: "download",
-          iconType: "feather",
-          color: colors.warning,
-          onPress: handleExportData,
-        },
+        // {
+        //   id: 6,
+        //   title: "Export Data",
+        //   icon: "download",
+        //   iconType: "feather",
+        //   color: colors.warning,
+        //   onPress: handleExportData,
+        // },
       ],
     },
     {
@@ -112,7 +97,7 @@ export default function ProfileScreen() {
           icon: "help-circle",
           iconType: "ionicons",
           color: colors.info,
-          onPress: () => Linking.openURL("mailto:support@tvsagency.com"),
+          onPress: () => Linking.openURL("mailto:radhaautowheels@gmail.com"),
         },
         {
           id: 8,
@@ -151,38 +136,13 @@ export default function ProfileScreen() {
     }
   }
 
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission required",
-        "Please grant camera roll permissions"
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setProfileImage(result.assets[0].uri);
-    }
-  };
-
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Logout",
         style: "destructive",
-        onPress: () => {
-          // TODO: Implement logout logic
-          router.replace("/login");
-        },
+        onPress: logout,
       },
     ]);
   };
@@ -217,82 +177,20 @@ export default function ProfileScreen() {
         {/* Profile Header */}
         <View style={styles.profileHeader}>
           <View style={styles.profileImageContainer}>
-            <TouchableOpacity onPress={pickImage}>
-              {profileImage ? (
-                <Image
-                  source={{ uri: profileImage }}
-                  style={styles.profileImage}
-                />
-              ) : (
-                <View style={styles.profileAvatar}>
-                  <Text style={styles.profileAvatarText}>
-                    {user.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.editImageButton}>
-                <Feather name="camera" size={16} color={colors.white} />
+              <View style={styles.profileAvatar}>
+                <Text style={styles.profileAvatarText}>
+                  {user.name
+                    .split(" ")
+                    .map((n: any) => n[0])
+                    .join("")}
+                </Text>
               </View>
-            </TouchableOpacity>
           </View>
 
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user.name}</Text>
-            <Text style={styles.profileRole}>{user.role}</Text>
-            <Text style={styles.profileAgency}>{user.agency}</Text>
-          </View>
-        </View>
-
-        {/* User Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <View
-              style={[
-                styles.statIcon,
-                { backgroundColor: `${colors.primary}20` },
-              ]}
-            >
-              <FontAwesome5
-                name="shopping-cart"
-                size={20}
-                color={colors.primary}
-              />
-            </View>
-            <Text style={styles.statNumber}>{user.totalSales}</Text>
-            <Text style={styles.statLabel}>Total Sales</Text>
-          </View>
-
-          <View style={styles.statItem}>
-            <View
-              style={[
-                styles.statIcon,
-                { backgroundColor: `${colors.success}20` },
-              ]}
-            >
-              <MaterialIcons
-                name="attach-money"
-                size={24}
-                color={colors.success}
-              />
-            </View>
-            <Text style={styles.statNumber}>{user.totalRevenue}</Text>
-            <Text style={styles.statLabel}>Revenue</Text>
-          </View>
-
-          <View style={styles.statItem}>
-            <View
-              style={[
-                styles.statIcon,
-                { backgroundColor: `${colors.warning}20` },
-              ]}
-            >
-              <Ionicons name="trending-up" size={24} color={colors.warning} />
-            </View>
-            <Text style={styles.statNumber}>{user.performance}</Text>
-            <Text style={styles.statLabel}>Performance</Text>
+            <Text style={styles.profileRole}>{user.role || 'Manager'}</Text>
+            <Text style={styles.profileAgency}>Radha TVS</Text>
           </View>
         </View>
 
@@ -338,7 +236,7 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Location</Text>
-              <Text style={styles.detailValue}>{user.location}</Text>
+              <Text style={styles.detailValue}>{user?.location || "Khera Sattu 202125"}</Text>
             </View>
           </View>
 
@@ -353,7 +251,7 @@ export default function ProfileScreen() {
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Joined On</Text>
               <Text style={styles.detailValue}>
-                {formatJoinDate(user.joinDate)}
+                {formatJoinDate(user.createdAt)}
               </Text>
             </View>
           </View>
@@ -371,12 +269,12 @@ export default function ProfileScreen() {
           <View key={sectionIndex} style={styles.menuSection}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
             <View style={styles.menuItems}>
-              {section.items.map((item) => (
+              {section.items.map((item: any) => (
                 <TouchableOpacity
                   key={item.id}
                   style={styles.menuItem}
                   onPress={item.onPress}
-                  disabled={item.type === "switch"}
+                  disabled={item?.type === "switch"}
                 >
                   <View style={styles.menuItemLeft}>
                     <View
@@ -385,7 +283,7 @@ export default function ProfileScreen() {
                         { backgroundColor: item.color },
                       ]}
                     >
-                      {renderIcon(item.icon, item.iconType, colors.white)}
+                      {renderIcon(item?.icon, item.iconType, colors.white)}
                     </View>
                     <Text style={styles.menuItemText}>{item.title}</Text>
                   </View>
@@ -414,20 +312,12 @@ export default function ProfileScreen() {
           <Ionicons name="log-out-outline" size={22} color={colors.danger} />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
-
-        {/* App Info */}
-        <View style={styles.appInfo}>
-          <Text style={styles.appVersion}>TVS Bike Inventory v1.0.0</Text>
-          <Text style={styles.appCopyright}>
-            © 2024 TVS Agency. All rights reserved.
-          </Text>
-        </View>
       </ScrollView>
     </ScreenWrapper>
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -537,7 +427,6 @@ const styles = {
     backgroundColor: colors.white,
     borderRadius: 12,
     margin: 16,
-    marginTop: 0,
     padding: 20,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
@@ -655,4 +544,4 @@ const styles = {
     fontSize: 12,
     color: colors.textLight,
   },
-};
+});

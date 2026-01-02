@@ -1,104 +1,68 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  Modal,
-  FlatList,
-} from "react-native";
-import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { colors } from "@/utils/constant";
+import { bikeApi } from "@/api/bikeApi";
+import { customerApi } from "@/api/customerApi";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { colors } from "@/utils/constant";
 import { Bike, Customer } from "@/utils/types";
+import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function SellScreen() {
   const [selectedBike, setSelectedBike] = useState<Bike | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
   const [quantity, setQuantity] = useState("1");
   const [discount, setDiscount] = useState("0");
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "upi" | "cheque">("cash");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "cash" | "card" | "upi" | "cheque"
+  >("cash");
   const [isBikeModalVisible, setIsBikeModalVisible] = useState(false);
   const [isCustomerModalVisible, setIsCustomerModalVisible] = useState(false);
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Mock data - Replace with actual API calls
   useEffect(() => {
-    // Mock bikes data
-    const mockBikes: Bike[] = [
-      {
-        _id: "1",
-        brand: "TVS",
-        model: "Apache RTR 200",
-        color: "Red",
-        engineCC: 200,
-        purchasePrice: 120000,
-        sellingPrice: 150000,
-        stock: 5,
-        status: "IN_STOCK",
-      },
-      {
-        _id: "2",
-        brand: "TVS",
-        model: "Raider 125",
-        color: "Blue",
-        engineCC: 125,
-        purchasePrice: 80000,
-        sellingPrice: 95000,
-        stock: 3,
-        status: "IN_STOCK",
-      },
-      {
-        _id: "3",
-        brand: "TVS",
-        model: "Jupiter",
-        color: "Black",
-        engineCC: 110,
-        purchasePrice: 70000,
-        sellingPrice: 85000,
-        stock: 8,
-        status: "IN_STOCK",
-      },
-    ];
-
-    // Mock customers data
-    const mockCustomers: Customer[] = [
-      {
-        _id: "1",
-        name: "Rajesh Kumar",
-        email: "rajesh@example.com",
-        phone: "+91 9876543210",
-        address: "Mumbai, Maharashtra",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        _id: "2",
-        name: "Priya Sharma",
-        email: "priya@example.com",
-        phone: "+91 8765432109",
-        address: "Delhi, NCR",
-        createdAt: new Date().toISOString(),
-      },
-      {
-        _id: "3",
-        name: "Amit Patel",
-        email: "amit@example.com",
-        phone: "+91 7654321098",
-        address: "Ahmedabad, Gujarat",
-        createdAt: new Date().toISOString(),
-      },
-    ];
-
-    setBikes(mockBikes);
-    setCustomers(mockCustomers);
+    fetchBikes();
+    fetchCustomers();
   }, []);
 
-  // Calculate totals
+  const fetchBikes = async (): Promise<void> => {
+    try {
+      const data = await bikeApi.getAll();
+      setBikes(data);
+    } catch (error) {
+      Alert.alert("Error", "Failed to fetch bikes. Please try again.");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      const res = await customerApi.getAllCustomers();
+      console.log(res);
+      setCustomers(res);
+    } catch (error) {
+      Alert.alert("Error", "Failed to load customers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const calculateSubtotal = () => {
     if (!selectedBike) return 0;
     const price = selectedBike.sellingPrice;
@@ -120,7 +84,6 @@ export default function SellScreen() {
 
   const calculateTax = () => {
     const total = calculateTotal();
-    // 18% GST
     return total * 0.18;
   };
 
@@ -163,7 +126,11 @@ export default function SellScreen() {
 
     Alert.alert(
       "Confirm Sale",
-      `Are you sure you want to sell ${quantity} unit(s) of ${selectedBike.model} to ${selectedCustomer.name} for ₹${calculateGrandTotal().toLocaleString()}?`,
+      `Are you sure you want to sell ${quantity} unit(s) of ${
+        selectedBike.model
+      } to ${
+        selectedCustomer.name
+      } for ₹${calculateGrandTotal().toLocaleString()}?`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -211,7 +178,9 @@ export default function SellScreen() {
         <Text style={styles.bikeStock}>Stock: {item.stock}</Text>
       </View>
       <View style={styles.bikePrice}>
-        <Text style={styles.priceText}>₹{item.sellingPrice.toLocaleString()}</Text>
+        <Text style={styles.priceText}>
+          ₹{item.sellingPrice.toLocaleString()}
+        </Text>
         <Text style={styles.priceLabel}>Selling Price</Text>
       </View>
     </TouchableOpacity>
@@ -242,7 +211,7 @@ export default function SellScreen() {
   const paymentMethods = [
     { id: "cash", label: "Cash", icon: "cash" },
     { id: "card", label: "Card", icon: "card" },
-    { id: "upi", label: "UPI", icon: "phone-portrait" }
+    { id: "upi", label: "UPI", icon: "phone-portrait" },
   ];
 
   return (
@@ -255,16 +224,22 @@ export default function SellScreen() {
         </View>
 
         {/* Select Bike Card */}
-        <View style={styles.card}>
+        <View style={{ ...styles.card, marginTop: 16 }}>
           <View style={styles.cardHeader}>
-            <MaterialIcons name="directions-bike" size={24} color={colors.primary} />
+            <MaterialIcons
+              name="directions-bike"
+              size={24}
+              color={colors.primary}
+            />
             <Text style={styles.cardTitle}>Select Bike</Text>
           </View>
-          
+
           {selectedBike ? (
             <View style={styles.selectedItemContainer}>
               <View style={styles.selectedItemInfo}>
-                <Text style={styles.selectedItemTitle}>{selectedBike.model}</Text>
+                <Text style={styles.selectedItemTitle}>
+                  {selectedBike.model}
+                </Text>
                 <Text style={styles.selectedItemSubtitle}>
                   {selectedBike.color} • {selectedBike.engineCC} CC
                 </Text>
@@ -284,7 +259,11 @@ export default function SellScreen() {
               style={styles.selectButton}
               onPress={() => setIsBikeModalVisible(true)}
             >
-              <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+              <Ionicons
+                name="add-circle-outline"
+                size={24}
+                color={colors.primary}
+              />
               <Text style={styles.selectButtonText}>Select Bike</Text>
             </TouchableOpacity>
           )}
@@ -296,16 +275,24 @@ export default function SellScreen() {
             <Ionicons name="person" size={24} color={colors.primary} />
             <Text style={styles.cardTitle}>Select Customer</Text>
           </View>
-          
+
           {selectedCustomer ? (
             <View style={styles.selectedItemContainer}>
               <View style={styles.customerAvatar}>
-                <Text style={styles.avatarText}>{selectedCustomer.name.charAt(0)}</Text>
+                <Text style={styles.avatarText}>
+                  {selectedCustomer.name.charAt(0)}
+                </Text>
               </View>
               <View style={styles.selectedItemInfo}>
-                <Text style={styles.selectedItemTitle}>{selectedCustomer.name}</Text>
-                <Text style={styles.selectedItemSubtitle}>{selectedCustomer.phone}</Text>
-                <Text style={styles.selectedItemSubtitle}>{selectedCustomer.email}</Text>
+                <Text style={styles.selectedItemTitle}>
+                  {selectedCustomer.name}
+                </Text>
+                <Text style={styles.selectedItemSubtitle}>
+                  {selectedCustomer.phone}
+                </Text>
+                <Text style={styles.selectedItemSubtitle}>
+                  {selectedCustomer.email}
+                </Text>
               </View>
               <TouchableOpacity
                 style={styles.changeButton}
@@ -319,7 +306,11 @@ export default function SellScreen() {
               style={styles.selectButton}
               onPress={() => setIsCustomerModalVisible(true)}
             >
-              <Ionicons name="person-add-outline" size={24} color={colors.primary} />
+              <Ionicons
+                name="person-add-outline"
+                size={24}
+                color={colors.primary}
+              />
               <Text style={styles.selectButtonText}>Select Customer</Text>
             </TouchableOpacity>
           )}
@@ -403,12 +394,15 @@ export default function SellScreen() {
                   <Ionicons
                     name={method.icon as any}
                     size={20}
-                    color={paymentMethod === method.id ? colors.white : colors.text}
+                    color={
+                      paymentMethod === method.id ? colors.white : colors.text
+                    }
                   />
                   <Text
                     style={[
                       styles.paymentMethodText,
-                      paymentMethod === method.id && styles.selectedPaymentMethodText,
+                      paymentMethod === method.id &&
+                        styles.selectedPaymentMethodText,
                     ]}
                   >
                     {method.label}
@@ -422,7 +416,11 @@ export default function SellScreen() {
         {/* Invoice Summary Card */}
         <View style={[styles.card, { backgroundColor: colors.primaryLight }]}>
           <View style={styles.cardHeader}>
-            <FontAwesome5 name="file-invoice-dollar" size={24} color={colors.primary} />
+            <FontAwesome5
+              name="file-invoice-dollar"
+              size={24}
+              color={colors.primary}
+            />
             <Text style={styles.cardTitle}>Invoice Summary</Text>
           </View>
 
@@ -433,40 +431,40 @@ export default function SellScreen() {
                 ₹{selectedBike?.sellingPrice.toLocaleString() || "0"}
               </Text>
             </View>
-            
+
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Quantity</Text>
               <Text style={styles.summaryValue}>{quantity}</Text>
             </View>
-            
+
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Subtotal</Text>
               <Text style={styles.summaryValue}>
                 ₹{calculateSubtotal().toLocaleString()}
               </Text>
             </View>
-            
+
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Discount</Text>
               <Text style={[styles.summaryValue, { color: colors.success }]}>
                 - ₹{calculateDiscountAmount().toLocaleString()}
               </Text>
             </View>
-            
+
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total</Text>
               <Text style={styles.summaryValue}>
                 ₹{calculateTotal().toLocaleString()}
               </Text>
             </View>
-            
+
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>GST (18%)</Text>
               <Text style={styles.summaryValue}>
                 + ₹{calculateTax().toLocaleString()}
               </Text>
             </View>
-            
+
             <View style={[styles.summaryRow, styles.grandTotalRow]}>
               <Text style={styles.grandTotalLabel}>Grand Total</Text>
               <Text style={styles.grandTotalValue}>
@@ -490,7 +488,7 @@ export default function SellScreen() {
           >
             <Text style={styles.resetButtonText}>Reset</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[
               styles.actionButton,
@@ -504,7 +502,11 @@ export default function SellScreen() {
               <Text style={styles.sellButtonText}>Processing...</Text>
             ) : (
               <>
-                <FontAwesome5 name="cash-register" size={20} color={colors.white} />
+                <FontAwesome5
+                  name="cash-register"
+                  size={20}
+                  color={colors.white}
+                />
                 <Text style={styles.sellButtonText}>Complete Sale</Text>
               </>
             )}
@@ -527,7 +529,7 @@ export default function SellScreen() {
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
-            
+
             <FlatList
               data={bikes}
               renderItem={renderBikeItem}
@@ -535,7 +537,11 @@ export default function SellScreen() {
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={
                 <View style={styles.emptyList}>
-                  <MaterialIcons name="directions-bike" size={48} color={colors.border} />
+                  <MaterialIcons
+                    name="directions-bike"
+                    size={48}
+                    color={colors.border}
+                  />
                   <Text style={styles.emptyListText}>No bikes available</Text>
                 </View>
               }
@@ -565,7 +571,7 @@ export default function SellScreen() {
                 <Ionicons name="add" size={24} color={colors.primary} />
               </TouchableOpacity>
             </View>
-            
+
             <FlatList
               data={customers}
               renderItem={renderCustomerItem}
@@ -582,7 +588,9 @@ export default function SellScreen() {
                       router.push("/add-customer");
                     }}
                   >
-                    <Text style={styles.addCustomerButtonText}>Add New Customer</Text>
+                    <Text style={styles.addCustomerButtonText}>
+                      Add New Customer
+                    </Text>
                   </TouchableOpacity>
                 </View>
               }
@@ -594,7 +602,7 @@ export default function SellScreen() {
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -989,4 +997,4 @@ const styles = {
     fontWeight: "600",
     color: colors.primary,
   },
-};
+});
