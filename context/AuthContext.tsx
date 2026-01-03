@@ -1,5 +1,8 @@
 import { authApi } from "@/api/authApi";
-import { User } from "@/utils/types";
+import { bikeApi } from "@/api/bikeApi";
+import { customerApi } from "@/api/customerApi";
+import { saleApi } from "@/api/saleApi";
+import { Bike, Customer, Sale, User } from "@/utils/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -12,6 +15,12 @@ type AuthContextType = {
   logout: () => Promise<void>;
   user: any;
   setUser: React.Dispatch<any>;
+  bikes: Bike[];
+  setBikes: React.Dispatch<React.SetStateAction<Bike[]>>;
+  customers: Customer[];
+  setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
+  sales: Sale[];
+  setSales: React.Dispatch<React.SetStateAction<Sale[]>>;
 };
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -20,6 +29,9 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [bikes, setBikes] = useState<Bike[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -27,6 +39,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchBikes();
+      fetchCustomers();
+      fetchSales();
+    }
+  }, [user]);
 
   const checkAuth = async () => {
     const savedToken = await AsyncStorage.getItem("token");
@@ -44,6 +64,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err) {
       setIsLoading(false);
       router.replace("/Login");
+    }
+  };
+
+  const fetchBikes = async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      const data = await bikeApi.getAll();
+      setBikes(data);
+    } catch (error) {
+      Alert.alert("Error", "Failed to fetch bikes. Please try again.");
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      setIsLoading(true);
+      const res = await customerApi.getAllCustomers();
+      setCustomers(res);
+    } catch (error) {
+      Alert.alert("Error", "Failed to load customers");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchSales = async () => {
+    try {
+      setIsLoading(true);
+      const res = await saleApi.getAll();
+      setSales(res.data);
+    } catch (error) {
+      Alert.alert("Error", "Failed to load customers");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -87,6 +144,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         logout,
         user,
         setUser,
+        bikes,
+        setBikes,
+        customers,
+        setCustomers,
+        sales, 
+        setSales
       }}
     >
       {children}

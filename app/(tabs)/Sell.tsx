@@ -1,11 +1,11 @@
-import { bikeApi } from "@/api/bikeApi";
-import { customerApi } from "@/api/customerApi";
+import { saleApi } from "@/api/saleApi";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { useAuth } from "@/context/AuthContext";
 import { colors } from "@/utils/constant";
 import { Bike, Customer } from "@/utils/types";
 import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   FlatList,
@@ -30,38 +30,8 @@ export default function SellScreen() {
   >("cash");
   const [isBikeModalVisible, setIsBikeModalVisible] = useState(false);
   const [isCustomerModalVisible, setIsCustomerModalVisible] = useState(false);
-  const [bikes, setBikes] = useState<Bike[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchBikes();
-    fetchCustomers();
-  }, []);
-
-  const fetchBikes = async (): Promise<void> => {
-    try {
-      const data = await bikeApi.getAll();
-      setBikes(data);
-    } catch (error) {
-      Alert.alert("Error", "Failed to fetch bikes. Please try again.");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCustomers = async () => {
-    try {
-      const res = await customerApi.getAllCustomers();
-      console.log(res);
-      setCustomers(res);
-    } catch (error) {
-      Alert.alert("Error", "Failed to load customers");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { bikes, customers } = useAuth();
 
   const calculateSubtotal = () => {
     if (!selectedBike) return 0;
@@ -82,13 +52,8 @@ export default function SellScreen() {
     return subtotal - discountAmount;
   };
 
-  const calculateTax = () => {
-    const total = calculateTotal();
-    return total * 0.18;
-  };
-
   const calculateGrandTotal = () => {
-    return calculateTotal() + calculateTax();
+    return calculateTotal();
   };
 
   const handleSell = () => {
@@ -110,19 +75,12 @@ export default function SellScreen() {
     const saleData = {
       bikeId: selectedBike._id,
       customerId: selectedCustomer._id,
-      bikeModel: selectedBike.model,
-      customerName: selectedCustomer.name,
       quantity: parseInt(quantity),
-      unitPrice: selectedBike.sellingPrice,
-      discount: parseFloat(discount),
-      tax: calculateTax(),
-      total: calculateGrandTotal(),
+      discountAmount: calculateDiscountAmount(),
+      discountPercentage: parseFloat(discount),
       paymentMethod,
-      date: new Date().toISOString(),
+      saleDate: new Date().toISOString(),
     };
-
-    // TODO: Save sale to backend
-    console.log("Sale data:", saleData);
 
     Alert.alert(
       "Confirm Sale",
@@ -136,16 +94,16 @@ export default function SellScreen() {
         {
           text: "Confirm",
           style: "default",
-          onPress: () => {
-            setLoading(true);
-            // API call would go here
-            setTimeout(() => {
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const res = await saleApi.createSale(saleData);
+              console.log(res);
               setLoading(false);
               Alert.alert("Success", "Sale completed successfully!", [
                 {
                   text: "OK",
                   onPress: () => {
-                    // Reset form
                     setSelectedBike(null);
                     setSelectedCustomer(null);
                     setQuantity("1");
@@ -154,7 +112,10 @@ export default function SellScreen() {
                   },
                 },
               ]);
-            }, 1500);
+            } catch (err) {
+              setLoading(false);
+              Alert.alert("Error", "Sale Error!");
+            }
           },
         },
       ]
@@ -458,13 +419,6 @@ export default function SellScreen() {
               </Text>
             </View>
 
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>GST (18%)</Text>
-              <Text style={styles.summaryValue}>
-                + ₹{calculateTax().toLocaleString()}
-              </Text>
-            </View>
-
             <View style={[styles.summaryRow, styles.grandTotalRow]}>
               <Text style={styles.grandTotalLabel}>Grand Total</Text>
               <Text style={styles.grandTotalValue}>
@@ -565,7 +519,7 @@ export default function SellScreen() {
                 style={styles.addCustomerButton}
                 onPress={() => {
                   setIsCustomerModalVisible(false);
-                  router.push("/add-customer.tsx");
+                  router.push("/add-customer");
                 }}
               >
                 <Ionicons name="add" size={24} color={colors.primary} />

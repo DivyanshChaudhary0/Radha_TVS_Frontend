@@ -17,4 +17,8 @@ export const customerApi = {
     const res = await axiosInstance.delete(`/api/customers/${id}`);
     return res.data;
   },
+  getCustomerById: async (id: string) => {
+    const res = await axiosInstance.get(`/api/customers/${id}`);
+    return res.data;
+  }
 };

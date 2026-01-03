@@ -1,4 +1,5 @@
-
+import { customerApi } from "@/api/customerApi";
+import { saleApi } from "@/api/saleApi";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { colors } from "@/utils/constant";
 import { Sale } from "@/utils/types";
@@ -6,19 +7,20 @@ import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Linking,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Linking,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function CustomerSalesScreen() {
-  const { id } = useLocalSearchParams();
+  const { id }: any = useLocalSearchParams();
   const [customer, setCustomer] = useState<any>(null);
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,83 +32,57 @@ export default function CustomerSalesScreen() {
     lastSaleDate: "",
   });
 
-  // Mock customer data - Replace with API call
   useEffect(() => {
-    fetchCustomerAndSales();
+    if (id) {
+      fetchCustomerAndSales();
+    }
   }, [id]);
 
   const fetchCustomerAndSales = async () => {
     try {
-      // TODO: Replace with actual API calls
+      setLoading(true);
 
-      // Mock customer data based on ID
-      const mockCustomer = {
-        _id: id as string,
-        name: "Rajesh Kumar",
-        email: "rajesh@example.com",
-        phone: "+91 9876543210",
-        address: "Mumbai, Maharashtra",
-        createdAt: "2024-01-15T10:30:00Z",
-      };
+      const customerResponse = await customerApi.getCustomerById(id);
+    
+      if (customerResponse.data) {
+        setCustomer(customerResponse.data);
+      } else if (customerResponse.success && customerResponse.data) {
+        setCustomer(customerResponse.data);
+      } else {
+        setCustomer(customerResponse);
+      }
 
-      // Mock sales data
-      const mockSales: Sale[] = [
-        {
-          _id: "1",
-          bikeId: "1",
-          customerId: id as string,
-          bikeModel: "TVS Apache RTR 200",
-          customerName: "Rajesh Kumar",
-          quantity: 1,
-          unitPrice: 150000,
-          discount: 5000,
-          tax: 27000,
-          total: 172000,
-          paymentMethod: "upi",
-          date: "2024-01-20T14:30:00Z",
-          createdAt: "2024-01-20T14:30:00Z",
-        },
-        {
-          _id: "2",
-          bikeId: "2",
-          customerId: id as string,
-          bikeModel: "TVS Raider 125",
-          customerName: "Rajesh Kumar",
-          quantity: 2,
-          unitPrice: 95000,
-          discount: 10000,
-          tax: 34200,
-          total: 218400,
-          paymentMethod: "card",
-          date: "2024-01-25T11:15:00Z",
-          createdAt: "2024-01-25T11:15:00Z",
-        },
-        {
-          _id: "3",
-          bikeId: "3",
-          customerId: id as string,
-          bikeModel: "TVS Jupiter",
-          customerName: "Rajesh Kumar",
-          quantity: 1,
-          unitPrice: 85000,
-          discount: 3000,
-          tax: 14760,
-          total: 96760,
-          paymentMethod: "cash",
-          date: "2024-02-01T16:45:00Z",
-          createdAt: "2024-02-01T16:45:00Z",
-        },
-      ];
+      // 2. Fetch sales for this customer
+      const salesResponse = await saleApi.getSalesByCustomerId(id);
+      console.log("Sales API Response:", salesResponse);
 
-      setCustomer(mockCustomer);
-      setSales(mockSales);
+      let salesData = [];
 
-      // Calculate stats
-      const totalSales = mockSales.length;
-      const totalAmount = mockSales.reduce((sum, sale) => sum + sale.total, 0);
+      // Handle different response structures
+      if (Array.isArray(salesResponse)) {
+        salesData = salesResponse;
+      } else if (salesResponse.data && Array.isArray(salesResponse.data)) {
+        salesData = salesResponse.data;
+      } else if (salesResponse.success && Array.isArray(salesResponse.data)) {
+        salesData = salesResponse.data;
+      }
+
+      setSales(salesData);
+
+      // 3. Calculate statistics
+      const totalSales = salesData.length;
+
+      const totalAmount = salesData.reduce(
+        (sum: number, sale: Sale) =>
+          sum + (sale?.totalAmount || sale.total || 0),
+        0
+      );
+
       const averageSale = totalSales > 0 ? totalAmount / totalSales : 0;
       const lastSaleDate =
-        mockSales.length > 0 ? mockSales[mockSales.length - 1].date : "";
+        totalSales > 0
+          ? salesData[0]?.saleDate || salesData[0]?.date || ""
+          : "";
 
       setTotalStats({
         totalSales,
@@ -114,8 +90,12 @@ export default function CustomerSalesScreen() {
         averageSale,
         lastSaleDate,
       });
-    } catch (error) {
-      Alert.alert("Error", "Failed to load customer sales data");
+    } catch (error: any) {
+      console.error("Error fetching customer sales:", error);
+      Alert.alert(
+        "Error",
+        error.message || "Failed to load customer sales data"
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -128,22 +108,32 @@ export default function CustomerSalesScreen() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      return "Invalid Date";
+    }
   };
 
   const formatCurrency = (amount: number) => {
-    return `₹${amount.toLocaleString()}`;
+    if (!amount && amount !== 0) return "₹0";
+    return `₹${amount.toLocaleString("en-IN")}`;
   };
 
   const getPaymentMethodIcon = (method: string) => {
-    switch (method) {
+    if (!method)
+      return <Ionicons name="card" size={16} color={colors.textLight} />;
+
+    const methodLower = method.toLowerCase();
+    switch (methodLower) {
       case "cash":
         return (
           <FontAwesome5
@@ -169,34 +159,6 @@ export default function CustomerSalesScreen() {
     }
   };
 
-  const handleViewInvoice = (sale: Sale) => {
-    Alert.alert(
-      "Invoice Details",
-      `Bike: ${sale.bikeModel}\nQuantity: ${
-        sale.quantity
-      }\nUnit Price: ${formatCurrency(
-        sale.unitPrice
-      )}\nDiscount: ${formatCurrency(sale.discount)}\nTax: ${formatCurrency(
-        sale.tax
-      )}\nTotal: ${formatCurrency(
-        sale.total
-      )}\nPayment: ${sale.paymentMethod.toUpperCase()}\nDate: ${formatDate(
-        sale.date
-      )}`,
-      [
-        { text: "Close", style: "cancel" },
-        {
-          text: "Print Invoice",
-          onPress: () => console.log("Print invoice:", sale._id),
-        },
-        {
-          text: "Share",
-          onPress: () => console.log("Share invoice:", sale._id),
-        },
-      ]
-    );
-  };
-
   const handleDeleteSale = (saleId: string) => {
     Alert.alert(
       "Delete Sale",
@@ -220,88 +182,73 @@ export default function CustomerSalesScreen() {
     );
   };
 
-  const renderSaleItem = ({ item }: { item: Sale }) => (
-    <TouchableOpacity
-      style={styles.saleCard}
-      onPress={() => handleViewInvoice(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.saleHeader}>
-        <View style={styles.saleInfo}>
-          <Text style={styles.saleModel}>{item.bikeModel}</Text>
-          <View style={styles.saleMeta}>
-            <Text style={styles.saleQuantity}>Qty: {item.quantity}</Text>
-            <Text style={styles.saleSeparator}>•</Text>
-            <View style={styles.paymentMethod}>
-              {getPaymentMethodIcon(item.paymentMethod)}
-              <Text style={styles.paymentText}>
-                {item.paymentMethod.toUpperCase()}
+  const renderSaleItem = ({ item }: { item: any }) => {
+    const bikeModel = item?.bikeId?.model || item?.bikeModel || "N/A";
+    const unitPrice = item?.unitPrice || 0;
+    const discount = item?.discountAmount || item.discount || 0;
+    const tax = item?.taxAmount || item.tax || 0;
+    const total = item.totalAmount || item.total || 0;
+    const quantity = item?.quantity || 1;
+    const paymentMethod = item?.paymentMethod || "N/A";
+    const date = item?.saleDate || item?.date || "";
+
+    return (
+      <View
+        style={styles.saleCard}
+      >
+        <View style={styles.saleHeader}>
+          <View style={styles.saleInfo}>
+            <Text style={styles.saleModel}>{bikeModel}</Text>
+            <View style={styles.saleMeta}>
+              <Text style={styles.saleQuantity}>Qty: {quantity}</Text>
+              <Text style={styles.saleSeparator}>•</Text>
+              <View style={styles.paymentMethod}>
+                {getPaymentMethodIcon(paymentMethod)}
+                <Text style={styles.paymentText}>
+                  {paymentMethod.toUpperCase()}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.saleDate}>{formatDate(date)}</Text>
+          </View>
+          <View style={styles.saleAmount}>
+            <Text style={styles.totalAmount}>{formatCurrency(total)}</Text>
+            <Text style={styles.unitPrice}>
+              {formatCurrency(unitPrice)} each
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.saleDetails}>
+          <View style={styles.detailRow}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Unit Price</Text>
+              <Text style={styles.detailValue}>
+                {formatCurrency(unitPrice)}
               </Text>
             </View>
-          </View>
-          <Text style={styles.saleDate}>{formatDate(item.date)}</Text>
-        </View>
-        <View style={styles.saleAmount}>
-          <Text style={styles.totalAmount}>{formatCurrency(item.total)}</Text>
-          <Text style={styles.unitPrice}>
-            {formatCurrency(item.unitPrice)} each
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.saleDetails}>
-        <View style={styles.detailRow}>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Unit Price</Text>
-            <Text style={styles.detailValue}>
-              {formatCurrency(item.unitPrice)}
-            </Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Discount</Text>
-            <Text style={[styles.detailValue, { color: colors.success }]}>
-              -{formatCurrency(item.discount)}
-            </Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Tax</Text>
-            <Text style={styles.detailValue}>+{formatCurrency(item.tax)}</Text>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Discount</Text>
+              <Text style={[styles.detailValue, { color: colors.success }]}>
+                -{formatCurrency(discount)}
+              </Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Tax</Text>
+              <Text style={styles.detailValue}>+{formatCurrency(tax)}</Text>
+            </View>
           </View>
         </View>
+
       </View>
-
-      <View style={styles.saleActions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleViewInvoice(item)}
-        >
-          <Ionicons name="receipt-outline" size={18} color={colors.primary} />
-          <Text style={styles.actionText}>Invoice</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push({pathname: "/edit-sales", params: { id }})}
-        >
-          <Ionicons name="create-outline" size={18} color={colors.warning} />
-          <Text style={styles.actionText}>Edit</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleDeleteSale(item._id)}
-        >
-          <Ionicons name="trash-outline" size={18} color={colors.danger} />
-          <Text style={styles.actionText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   if (loading && !refreshing) {
     return (
       <ScreenWrapper>
         <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading sales history...</Text>
         </View>
       </ScreenWrapper>
@@ -332,12 +279,20 @@ export default function CustomerSalesScreen() {
           {customer && (
             <View style={styles.customerInfo}>
               <View style={styles.customerAvatar}>
-                <Text style={styles.avatarText}>{customer.name.charAt(0)}</Text>
+                <Text style={styles.avatarText}>
+                  {customer?.name?.charAt(0) || "C"}
+                </Text>
               </View>
               <View style={styles.customerDetails}>
-                <Text style={styles.customerName}>{customer.name}</Text>
-                <Text style={styles.customerPhone}>{customer.phone}</Text>
-                <Text style={styles.customerEmail}>{customer.email}</Text>
+                <Text style={styles.customerName}>
+                  {customer?.name || "Unknown Customer"}
+                </Text>
+                <Text style={styles.customerPhone}>
+                  {customer?.phone || "No phone"}
+                </Text>
+                <Text style={styles.customerEmail}>
+                  {customer?.email || "No email"}
+                </Text>
               </View>
             </View>
           )}
@@ -413,7 +368,7 @@ export default function CustomerSalesScreen() {
             </Text>
             <Text style={styles.lastSaleText}>
               Customer loyalty since{" "}
-              {new Date(customer?.createdAt || "").getFullYear()}
+              {new Date(customer?.createdAt || Date.now()).getFullYear()}
             </Text>
           </View>
         )}
@@ -447,7 +402,7 @@ export default function CustomerSalesScreen() {
           <FlatList
             data={sales}
             renderItem={renderSaleItem}
-            keyExtractor={(item) => item._id}
+            keyExtractor={(item) => item._id || Math.random().toString()}
             scrollEnabled={false}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContent}
@@ -467,25 +422,6 @@ export default function CustomerSalesScreen() {
           <TouchableOpacity
             style={styles.quickActionButton}
             onPress={() => {
-              // Generate report for this customer
-              Alert.alert(
-                "Generate Report",
-                "Customer report will be generated"
-              );
-            }}
-          >
-            <Ionicons
-              name="download-outline"
-              size={24}
-              color={colors.success}
-            />
-            <Text style={styles.quickActionText}>Export Report</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.quickActionButton}
-            onPress={() => {
-              // Contact customer
               Alert.alert("Contact Customer", `Call ${customer?.phone}?`, [
                 { text: "Cancel", style: "cancel" },
                 {
@@ -519,15 +455,6 @@ export default function CustomerSalesScreen() {
               {formatCurrency(totalStats.averageSale)}
             </Text>
           </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Customer Since:</Text>
-            <Text style={styles.summaryValue}>
-              {new Date(customer?.createdAt || "").toLocaleDateString("en-IN", {
-                year: "numeric",
-                month: "long",
-              })}
-            </Text>
-          </View>
         </View>
       </ScrollView>
     </ScreenWrapper>
@@ -555,9 +482,8 @@ const styles = StyleSheet.create({
   headerTop: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 60,
+    paddingVertical: 16,
     paddingHorizontal: 20,
-    paddingBottom: 16,
   },
   backButton: {
     marginRight: 16,
@@ -571,7 +497,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 8,
   },
   customerAvatar: {
     width: 60,
@@ -608,8 +533,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: "row",
     paddingHorizontal: 16,
-    marginTop: -30,
-    marginBottom: 16,
+    marginVertical: 16,
   },
   statCard: {
     flex: 1,

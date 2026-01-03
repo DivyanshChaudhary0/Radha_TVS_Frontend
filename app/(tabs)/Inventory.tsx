@@ -2,9 +2,10 @@ import { bikeApi } from "@/api/bikeApi";
 import BikeCard from "@/components/BikeCard";
 import BikeFormModal from "@/components/BikeFormModal";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { useAuth } from "@/context/AuthContext";
 import { Bike } from "@/utils/types";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,15 +19,11 @@ import {
 import Toast from "react-native-toast-message";
 
 const InventoryScreen: React.FC = () => {
-  const [bikes, setBikes] = useState<Bike[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedBike, setSelectedBike] = useState<Bike | null>(null);
-
-  useEffect(() => {
-    fetchBikes();
-  }, []);
+  const { bikes, setBikes } = useAuth();
 
   const fetchBikes = async (): Promise<void> => {
     try {
@@ -277,7 +274,7 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: "row",
     paddingHorizontal: 16,
-    marginTop: -20,
+    marginTop: -12,
     marginBottom: 16,
   },
   statCard: {

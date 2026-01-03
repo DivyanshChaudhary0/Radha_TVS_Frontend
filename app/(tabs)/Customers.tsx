@@ -1,10 +1,11 @@
 import { customerApi } from "@/api/customerApi";
 import ScreenWrapper from "@/components/ScreenWrapper";
+import { useAuth } from "@/context/AuthContext";
 import { colors } from "@/utils/constant";
 import { Customer } from "@/utils/types";
-import { FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   FlatList,
@@ -19,9 +20,9 @@ import {
 import Toast from "react-native-toast-message";
 
 export default function CustomersScreen() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const { customers, setCustomers, sales } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
@@ -34,23 +35,6 @@ export default function CustomersScreen() {
     address: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Mock data - Replace with actual API calls
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
-  const fetchCustomers = async () => {
-    try {
-      const res = await customerApi.getAllCustomers();
-      console.log(res);
-      setCustomers(res);
-    } catch (error) {
-      Alert.alert("Error", "Failed to load customers");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredCustomers = customers.filter(
     (customer) =>
@@ -130,7 +114,6 @@ export default function CustomersScreen() {
 
         try {
           const res = await customerApi.addCustomer(newCustomer);
-          console.log(res);
           setCustomers([newCustomer, ...customers]);
           Toast.show({
             type: "success",
@@ -270,7 +253,8 @@ export default function CustomersScreen() {
     label: string,
     field: keyof typeof formData,
     placeholder: string,
-    keyboardType: any = "default"
+    keyboardType: any = "default",
+    length?: any
   ) => (
     <View style={styles.inputGroup}>
       <Text style={styles.inputLabel}>{label} *</Text>
@@ -285,6 +269,7 @@ export default function CustomersScreen() {
           }
         }}
         keyboardType={keyboardType}
+        maxLength={length}
       />
       {errors[field] && <Text style={styles.errorText}>{errors[field]}</Text>}
     </View>
@@ -354,24 +339,8 @@ export default function CustomersScreen() {
                 color={colors.success}
               />
             </View>
-            <Text style={styles.statNumber}>45</Text>
+            <Text style={styles.statNumber}>{sales?.length}</Text>
             <Text style={styles.statLabel}>Total Sales</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View
-              style={[
-                styles.statIcon,
-                { backgroundColor: `${colors.warning}20` },
-              ]}
-            >
-              <MaterialIcons
-                name="attach-money"
-                size={24}
-                color={colors.warning}
-              />
-            </View>
-            <Text style={styles.statNumber}>₹2.5L</Text>
-            <Text style={styles.statLabel}>Revenue</Text>
           </View>
         </View>
 
@@ -482,7 +451,7 @@ const CustomerModal = ({
           "customer@example.com",
           "email-address"
         )}
-        {renderInput("Phone Number", "phone", "9876543210", "phone-pad")}
+        {renderInput("Phone Number", "phone", "9876543210", "phone-pad", 10)}
 
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Address *</Text>

@@ -1,4 +1,4 @@
-// app/(tabs)/Dashboard.tsx
+import { dashboardApi } from "@/api/dashboardApi";
 import QuickAction from "@/components/QuickAction";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import StatCard from "@/components/StatCard";
@@ -17,44 +17,43 @@ import {
   View,
 } from "react-native";
 
+interface DashboardStats {
+  totalBikes: number;
+  inStock: number;
+  soldToday: number;
+  revenueToday: number;
+  bikesSoldToday: number;
+  lowStock: number;
+  totalCustomers: number;
+  weeklySales: any[];
+  paymentMethods: any[];
+}
+
+interface RecentActivity {
+  type: "sale" | "stock" | "customer" | "alert";
+  message: string;
+  time: string;
+}
+
 export default function DashboardScreen() {
   const { isLoading } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState({
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
     totalBikes: 0,
     inStock: 0,
     soldToday: 0,
     revenueToday: 0,
+    bikesSoldToday: 0,
     lowStock: 0,
     totalCustomers: 0,
+    weeklySales: [],
+    paymentMethods: [],
   });
 
-  const [recentActivities, setRecentActivities] = useState([
-    {
-      id: 1,
-      type: "sale",
-      message: "TVS Apache RTR 200 sold to Rajesh Kumar",
-      time: "2 hours ago",
-    },
-    {
-      id: 2,
-      type: "stock",
-      message: "Added 5 units of TVS Raider 125",
-      time: "4 hours ago",
-    },
-    {
-      id: 3,
-      type: "customer",
-      message: "New customer registered: Priya Sharma",
-      time: "6 hours ago",
-    },
-    {
-      id: 4,
-      type: "alert",
-      message: "Low stock alert: TVS Jupiter",
-      time: "1 day ago",
-    },
-  ]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>(
+    []
+  );
 
   const quickActions = [
     {
@@ -88,21 +87,36 @@ export default function DashboardScreen() {
   ];
 
   const fetchDashboardData = async () => {
-    // TODO: Replace with actual API calls
-    setStats({
-      totalBikes: 45,
-      inStock: 32,
-      soldToday: 5,
-      revenueToday: 625000,
-      lowStock: 3,
-      totalCustomers: 128,
-    });
+    try {
+      setLoading(true);
+      const response = await dashboardApi.getStatics();
+
+      if (response.success) {
+        setStats(response.data.stats);
+        setRecentActivities(response.data.recentActivities);
+      }
+    } catch (err) {
+      console.log("Error fetching dashboard data:", err);
+      setStats({
+        totalBikes: 45,
+        inStock: 32,
+        soldToday: 5,
+        revenueToday: 625000,
+        bikesSoldToday: 5,
+        lowStock: 3,
+        totalCustomers: 128,
+        weeklySales: [],
+        paymentMethods: [],
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchDashboardData();
-    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -130,11 +144,18 @@ export default function DashboardScreen() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator />
-      </View>
+      <ScreenWrapper>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ marginTop: 10, color: colors.textSecondary }}>
+            Loading dashboard...
+          </Text>
+        </View>
+      </ScreenWrapper>
     );
   }
 
@@ -171,29 +192,6 @@ export default function DashboardScreen() {
                 size={24}
                 color={colors.white}
               />
-              <View
-                style={{
-                  position: "absolute",
-                  top: -4,
-                  right: -4,
-                  backgroundColor: colors.danger,
-                  width: 16,
-                  height: 16,
-                  borderRadius: 8,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    color: colors.white,
-                    fontSize: 10,
-                    fontWeight: "bold",
-                  }}
-                >
-                  3
-                </Text>
-              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -267,17 +265,12 @@ export default function DashboardScreen() {
         <View style={[styles.card, { margin: 16 }]}>
           <View style={styles.rowBetween}>
             <Text style={styles.h3}>Recent Activities</Text>
-            <TouchableOpacity>
-              <Text style={[styles.body2, { color: colors.primary }]}>
-                View All
-              </Text>
-            </TouchableOpacity>
           </View>
 
           <View style={{ marginTop: 12 }}>
-            {recentActivities.map((activity) => (
+            {recentActivities.map((activity, index) => (
               <TouchableOpacity
-                key={activity.id}
+                key={index}
                 style={[
                   styles.row,
                   {
@@ -306,7 +299,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Low Stock Alert */}
+        {/* Additional Stats Section (Optional) */}
         {stats.lowStock > 0 && (
           <View
             style={[
@@ -315,6 +308,8 @@ export default function DashboardScreen() {
                 margin: 16,
                 marginTop: 0,
                 backgroundColor: colors.warningLight,
+                borderWidth: 1,
+                borderColor: colors.warning,
               },
             ]}
           >
@@ -329,7 +324,7 @@ export default function DashboardScreen() {
                 <Text
                   style={[
                     styles.body1,
-                    { color: colors.text, fontWeight: "600" },
+                    { fontWeight: "600", color: colors.text },
                   ]}
                 >
                   Low Stock Alert
@@ -341,97 +336,12 @@ export default function DashboardScreen() {
                   ]}
                 >
                   {stats.lowStock} bike{stats.lowStock > 1 ? "s" : ""} need
-                  restocking.
+                  restocking
                 </Text>
               </View>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: colors.warning,
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 6,
-                }}
-                onPress={() => router.push("/(tabs)/Inventory")}
-              >
-                <Text
-                  style={{
-                    color: colors.white,
-                    fontWeight: "600",
-                    fontSize: 14,
-                  }}
-                >
-                  View
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         )}
-
-        {/* Performance Metrics */}
-        <View style={[styles.card, { margin: 16, marginTop: 0 }]}>
-          <Text style={styles.h3}>Performance Metrics</Text>
-          <View style={{ marginTop: 12 }}>
-            <View style={[styles.rowBetween, { marginBottom: 12 }]}>
-              <Text style={styles.body2}>Monthly Sales Target</Text>
-              <Text
-                style={[
-                  styles.body2,
-                  { color: colors.success, fontWeight: "600" },
-                ]}
-              >
-                75%
-              </Text>
-            </View>
-            <View
-              style={{
-                height: 8,
-                backgroundColor: colors.divider,
-                borderRadius: 4,
-                overflow: "hidden",
-              }}
-            >
-              <View
-                style={{
-                  width: "75%",
-                  height: "100%",
-                  backgroundColor: colors.success,
-                  borderRadius: 4,
-                }}
-              />
-            </View>
-
-            <View
-              style={[styles.rowBetween, { marginTop: 20, marginBottom: 12 }]}
-            >
-              <Text style={styles.body2}>Customer Satisfaction</Text>
-              <Text
-                style={[
-                  styles.body2,
-                  { color: colors.primary, fontWeight: "600" },
-                ]}
-              >
-                92%
-              </Text>
-            </View>
-            <View
-              style={{
-                height: 8,
-                backgroundColor: colors.divider,
-                borderRadius: 4,
-                overflow: "hidden",
-              }}
-            >
-              <View
-                style={{
-                  width: "92%",
-                  height: "100%",
-                  backgroundColor: colors.primary,
-                  borderRadius: 4,
-                }}
-              />
-            </View>
-          </View>
-        </View>
       </ScrollView>
     </ScreenWrapper>
   );
