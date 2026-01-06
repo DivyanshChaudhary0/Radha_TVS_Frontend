@@ -55,15 +55,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(res.user);
       if (savedToken) {
         setToken(savedToken);
-        router.replace("/(tabs)/Dashboard");
-      } else {
-        router.replace("/Login");
       }
 
       setIsLoading(false);
     } catch (err) {
       setIsLoading(false);
-      router.replace("/Login");
     }
   };
 
@@ -132,7 +128,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     await AsyncStorage.removeItem("token");
     setToken(null);
-    router.replace("/Login");
+    router.replace("/(auth)/Login");
   };
 
   return (

@@ -151,9 +151,6 @@ export default function DashboardScreen() {
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={{ marginTop: 10, color: colors.textSecondary }}>
-            Loading dashboard...
-          </Text>
         </View>
       </ScreenWrapper>
     );

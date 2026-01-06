@@ -3,6 +3,8 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -41,123 +43,142 @@ export default function Login() {
 
   return (
     <ScreenWrapper>
-      <View style={styles.background}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.select({
+          ios: 0,
+          android: 0,
+        })}
+      >
         <ScrollView
-          contentContainerStyle={styles.scrollContainer}
+          contentContainerStyle={[
+            styles.scrollContainer,
+            Platform.OS === "android" && styles.scrollContainerAndroid,
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.logoContainer}>
-            <View style={styles.logoWrapper}>
-              <View style={styles.logoBackground}>
-                <Ionicons name="bicycle" size={60} color="#094770" />
+          <View style={styles.background}>
+            <View style={styles.logoContainer}>
+              <View style={styles.logoWrapper}>
+                <View style={styles.logoBackground}>
+                  <Ionicons name="bicycle" size={60} color="#094770" />
+                </View>
               </View>
-            </View>
-            <Text style={styles.appName}>RADHA TVS</Text>
-            <Text style={styles.appTagline}>Admin Dashboard</Text>
-          </View>
-
-          <View style={styles.formContainer}>
-            <Text style={styles.welcomeText}>Welcome Back</Text>
-            <Text style={styles.subtitle}>
-              Sign in to continue to your dashboard
-            </Text>
-
-            <View style={styles.inputContainer}>
-              <View style={styles.inputIcon}>
-                <Ionicons name="person-outline" size={22} color="#64748B" />
-              </View>
-              <TextInput
-                style={styles.input}
-                placeholder="Username"
-                placeholderTextColor="#94A3B8"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-                selectionColor="#094770"
-              />
+              <Text style={styles.appName}>RADHA TVS</Text>
+              <Text style={styles.appTagline}>Admin Dashboard</Text>
             </View>
 
-            <View style={styles.inputContainer}>
-              <View style={styles.inputIcon}>
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={22}
-                  color="#64748B"
+            <View style={styles.formContainer}>
+              <Text style={styles.welcomeText}>Welcome Back</Text>
+              <Text style={styles.subtitle}>
+                Sign in to continue to your dashboard
+              </Text>
+
+              <View style={styles.inputContainer}>
+                <View style={styles.inputIcon}>
+                  <Ionicons name="person-outline" size={22} color="#64748B" />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Username"
+                  placeholderTextColor="#94A3B8"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isLoading}
+                  selectionColor="#094770"
                 />
               </View>
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="#94A3B8"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={secureTextEntry}
-                editable={!isLoading}
-                selectionColor="#094770"
-              />
+
+              <View style={styles.inputContainer}>
+                <View style={styles.inputIcon}>
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={22}
+                    color="#64748B"
+                  />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor="#94A3B8"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={secureTextEntry}
+                  editable={!isLoading}
+                  selectionColor="#094770"
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setSecureTextEntry(!secureTextEntry)}
+                  disabled={isLoading}
+                >
+                  <Ionicons
+                    name={secureTextEntry ? "eye-outline" : "eye-off-outline"}
+                    size={22}
+                    color="#64748B"
+                  />
+                </TouchableOpacity>
+              </View>
+
               <TouchableOpacity
-                style={styles.eyeIcon}
-                onPress={() => setSecureTextEntry(!secureTextEntry)}
+                style={[
+                  styles.loginButton,
+                  isLoading && styles.loginButtonDisabled,
+                ]}
+                onPress={handleLogin}
+                disabled={isLoading}
+                activeOpacity={0.9}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Text style={styles.loginButtonText}>Sign In</Text>
+                    <Ionicons
+                      name="arrow-forward"
+                      size={20}
+                      color="#000"
+                      style={{ marginLeft: 8 }}
+                    />
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.forgotPasswordContainer}
                 disabled={isLoading}
               >
-                <Ionicons
-                  name={secureTextEntry ? "eye-outline" : "eye-off-outline"}
-                  size={22}
-                  color="#64748B"
-                />
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={[
-                styles.loginButton,
-                isLoading && styles.loginButtonDisabled,
-              ]}
-              onPress={handleLogin}
-              disabled={isLoading}
-              activeOpacity={0.9}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <Text style={styles.loginButtonText}>Sign In</Text>
-                  <Ionicons
-                    name="arrow-forward"
-                    size={20}
-                    color="#000"
-                    style={{ marginLeft: 8 }}
-                  />
-                </>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.forgotPasswordContainer}
-              disabled={isLoading}
-            >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
+  container: {
     flex: 1,
     backgroundColor: "#094770",
+  },
+  background: {
+    flex: 1,
+    minHeight: SCREEN_HEIGHT,
   },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
     minHeight: SCREEN_HEIGHT,
+  },
+  scrollContainerAndroid: {
+    paddingBottom: 0,
   },
   logoContainer: {
     alignItems: "center",
@@ -276,26 +297,5 @@ const styles = StyleSheet.create({
     color: "#094770",
     fontSize: 15,
     fontWeight: "600",
-  },
-  versionContainer: {
-    alignItems: "center",
-    marginTop: 32,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
-  },
-  versionText: {
-    color: "#94A3B8",
-    fontSize: 13,
-  },
-  footer: {
-    paddingVertical: 16,
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.1)",
-  },
-  footerText: {
-    color: "rgba(255, 255, 255, 0.7)",
-    fontSize: 12,
   },
 });
